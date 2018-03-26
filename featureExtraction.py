@@ -65,7 +65,9 @@ class featureExtraction:
             return 0
         title = self.data.getTitle(index)
         text = self.data.getBrief(index)
-        token= self.token
+        token = nltk.word_tokenize(title)
+        token2 = nltk.word_tokenize(text)
+        token.extend(token2)
         token_text = nltk.word_tokenize(text)
         token.extend(token_text)
         #print(token)
