@@ -20,8 +20,21 @@ class featureExtraction:
         self.datasize=self.data.getsize()
         self.isLabeled=islabeled
 
+
+
+
     def getsize(self):
         return self.datasize
+
+    def gettoken(self,index):
+        title = self.data.getTitle(index)
+        text = self.data.getBrief(index)
+        token_title = nltk.word_tokenize(title)
+        token_text = nltk.word_tokenize(text)
+        token = token_title
+        token.extend(token_text)
+        return token
+
 
     def getFeatures(self,index):
         title = self.data.getTitle(index)
@@ -52,7 +65,7 @@ class featureExtraction:
             return 0
         title = self.data.getTitle(index)
         text = self.data.getBrief(index)
-        token= nltk.word_tokenize(title)
+        token= self.token
         token_text = nltk.word_tokenize(text)
         token.extend(token_text)
         #print(token)

@@ -1,0 +1,9 @@
+best params: {'c1': 0.48562333405812252, 'c2': 0.0046809233863595867}
+model fitting
+             precision    recall  f1-score   support
+
+       KW_A      0.757     0.586     0.661       834
+       KW_M      0.683     0.658     0.670       658
+       KW_S      0.667     0.706     0.686       477
+
+avg / total      0.711     0.639     0.670      1969

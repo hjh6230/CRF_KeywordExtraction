@@ -65,11 +65,45 @@ def sent2labels(sent):
 def sent2tokens(sent):
     return [token for token, postag, label in sent]
 
-train_sents = list(nltk.corpus.conll2002.iob_sents('esp.train'))
-test_sents = list(nltk.corpus.conll2002.iob_sents('esp.testb'))
 
-X_train = [sent2features(s) for s in train_sents]
-y_train = [sent2labels(s) for s in train_sents]
 
-X_test = [sent2features(s) for s in test_sents]
-y_test = [sent2labels(s) for s in test_sents]
+if __name__ == "__main__":
+
+    print("this is start point")
+
+    train_sents = list(nltk.corpus.conll2002.iob_sents('esp.train'))
+    test_sents = list(nltk.corpus.conll2002.iob_sents('esp.testb'))
+
+    X_train = [sent2features(s) for s in train_sents]
+    y_train = [sent2labels(s) for s in train_sents]
+
+    X_test = [sent2features(s) for s in test_sents]
+    y_test = [sent2labels(s) for s in test_sents]
+
+    # define fixed parameters and parameters to search
+    crf = sklearn_crfsuite.CRF(
+        algorithm='lbfgs',
+        max_iterations=100,
+        all_possible_transitions=True
+    )
+    params_space = {
+        'c1': scipy.stats.expon(scale=0.5),
+        'c2': scipy.stats.expon(scale=0.05),
+    }
+
+    # use the same metric for evaluation
+    f1_scorer = make_scorer(metrics.flat_f1_score,
+                            average='weighted')
+
+    # search
+    rs = RandomizedSearchCV(crf, params_space,
+                            cv=3,
+                            verbose=1,
+                            n_jobs=-1,
+                            n_iter=50,
+                            scoring=f1_scorer)
+    rs.fit(X_train, y_train)
+
+    print('best params:', rs.best_params_)
+    print('best CV score:', rs.best_score_)
+    print('model size: {:0.2f}M'.format(rs.best_estimator_.size_ / 1000000))

@@ -57,7 +57,10 @@ class standardReadin:
             try:id=int(self.table.cell(index,5).value)
             except ValueError:
                 return []
-            return self.kwlist[id]
+            if (self.kwlist.get(id)):
+                return self.kwlist[id]
+            else:
+                return []
 
     def getsize(self):
         return self.nrows-1

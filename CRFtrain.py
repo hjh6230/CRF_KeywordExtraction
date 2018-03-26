@@ -1,28 +1,28 @@
 from itertools import chain
 
-import nltk
-import sklearn
+
 import scipy.stats
 from sklearn.metrics import make_scorer
 from sklearn.externals import joblib
 from sklearn.cross_validation import cross_val_score
 from sklearn.grid_search import RandomizedSearchCV
-import sys, time
+
 
 import sklearn_crfsuite
 from sklearn_crfsuite import scorers
 from sklearn_crfsuite import metrics
+import random
 
 from featureExtraction import featureExtraction as FeatureExyract
 from ProcessBar import progressbar
 
-def CRFtrain(No):
-    print("extract data")
-    X_train, y_train, X_test, y_test = extractdata()
+def CRFvalidation( X_test, y_test,crf):
+    # print("extract data")
+    # X_train, y_train, X_test, y_test = extractdata()
     print("model fitting")
 
 
-    crf = Cv3(X_train,y_train)
+    # crf = Cv3(X_train,y_train)
     y_pred = crf.predict(X_test)
 
     labels = list(crf.classes_)
@@ -38,44 +38,43 @@ def CRFtrain(No):
         y_test, y_pred, labels=sorted_labels, digits=3
     ))
 
-    filename="CRFmodel"+str(No)+".sav"
-    joblib.dump(crf,filename)
+
     return 0
 
-def extractdata():
+def extractdata(selectSize):
     data = FeatureExyract(True)
     datasize = data.getsize()
-    bound = int(datasize * 3 / 4)
 
-    bound_train = 20;
-    bound_test = 25;
+    randorder = [i for i in range(1,datasize+1)]
+    random.shuffle(randorder)
+    randorder=randorder[:selectSize]
 
-    print("get train set")
+    X_all=[]
+    y_all=[]
 
-    X_train = []
-    y_train = []
 
-    process_bar = progressbar(bound_train - 1, '*')
+    process_bar = progressbar(selectSize, '*')
+    count=0
 
-    for index in range(1, bound_train):
-        process_bar.progress(index)
-        X_train.append(data.getFeatures(index))
-        y_train.append(data.getLabel(index))
+    for index in randorder:
+        count=count+1
+        process_bar.progress(count)
+        X_all.append(data.getFeatures(index))
+        y_all.append(data.getLabel(index))
 
-    print("get test set")
 
-    X_test = []
-    y_test = []
 
-    process_bar2 = progressbar(bound_test - bound_train, '*')
+    # shuffle the dataset
 
-    for index in range(bound_train, bound_test):
-        process_bar2.progress(index - bound_train)
-        X_test.append(data.getFeatures(index))
-        y_test.append(data.getLabel(index))
 
-    print('xsize ', len(X_train))
-    print('ysize', len(y_train))
+    bound = int(selectSize * 3 / 4)
+    X_train = X_all[:bound]
+    y_train = y_all[:bound]
+
+    X_test = X_all[bound:]
+    y_test = y_all[bound:]
+
+
     return X_train, y_train, X_test, y_test
 
 def Cv3(X_train, y_train):
@@ -106,6 +105,11 @@ def Cv3(X_train, y_train):
     print('best params:', rs.best_params_)
     return rs.best_estimator_
 
-
-
-CRFtrain(1)
+if __name__ == "__main__":
+    No=0
+    datasize=500
+    X_train, y_train, X_test, y_test=extractdata(datasize)
+    crf = Cv3(X_train,y_train)
+    CRFvalidation(X_test, y_test,crf)
+    filename = "CRFmodel_" +str(datasize)+"data_"+ str(No) + ".sav"
+    joblib.dump(crf, filename)
