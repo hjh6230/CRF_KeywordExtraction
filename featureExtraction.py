@@ -68,8 +68,6 @@ class featureExtraction:
         token = nltk.word_tokenize(title)
         token2 = nltk.word_tokenize(text)
         token.extend(token2)
-        token_text = nltk.word_tokenize(text)
-        token.extend(token_text)
         #print(token)
         kws=self.data.loadkw(index)
         kws_split=[(word.lower()).split() for word in kws]
