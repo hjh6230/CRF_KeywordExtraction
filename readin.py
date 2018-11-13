@@ -1,8 +1,8 @@
 import xlrd
 
 class standardReadin:
-    def __init__(self,filename,islabel):
-        self.texfile=1
+    def __init__(self,filename,islabel=True):
+        # self.texfile=1
         data = xlrd.open_workbook(filename)
         textfile=open("SmartStoplist.txt",'r')
         stlist=textfile.readlines()

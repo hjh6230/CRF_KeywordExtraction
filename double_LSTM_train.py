@@ -1,6 +1,6 @@
 import keras
 import matplotlib.pyplot as plt
-from keras.models import Sequential
+from keras.models import Sequential,Model
 from keras.layers import Dense, Dropout, Activation,Input,Embedding,BatchNormalization
 from keras.layers import LSTM,TimeDistributed,Bidirectional,regularizers
 from keras.utils import to_categorical
@@ -14,9 +14,9 @@ import pickle
 num_doc=500
 num_epochs=300
 
-num_steps=4
+num_steps=8
 
-one_batch_size=40
+one_batch_size=20
 
 docInbatch=3
 
@@ -30,9 +30,9 @@ labelsize=5 # number of label clusters
 emb_index=loadWordVecs() #look up table
 vocab=len(emb_index)
 
-hidden_size=300
+hidden_size=100
 
-feature_size=10
+feature_size=9
 
 reverse_dict=dict(zip(emb_index.values(), emb_index.keys()))
 
@@ -55,6 +55,7 @@ class KerasBatchGenerator(object):
         self.count=0
 
     def generate_all(self):
+        id=np.zeros((batch_size, num_steps))
         x = np.zeros((batch_size, num_steps, feature_size))
         y = np.zeros((batch_size, num_steps, labelsize))
         while True:
@@ -76,17 +77,19 @@ class KerasBatchGenerator(object):
                 for i in range(one_batch_size):
                     head = 0
                     i_total = i + idoc * one_batch_size
-                    if (self.current_idx >= len(text)):
+                    if (self.current_idx > len(text)):
                         head += 1
                         self.current_idx = head
                     if self.current_idx + num_steps >= len(text):
                         # reset the index back to the start of the data set
                         rest_seat = num_steps - (len(text) - self.current_idx)
-                        x[i_total, :, :] = np.vstack((text[self.current_idx:], np.zeros((rest_seat, feature_size))))
+                        id[i_total,:]=np.hstack((text[self.current_idx:,0], np.zeros((rest_seat))))
+                        x[i_total, :, :] = np.vstack((text[self.current_idx:,1:], np.zeros((rest_seat, feature_size))))
                         temp_y = np.hstack((lbs[self.current_idx:], np.zeros((rest_seat))))
                         self.current_idx = 0
                     else:
-                        x[i_total, :, :] = text[self.current_idx:self.current_idx + num_steps]
+                        id[i_total, :]=text[self.current_idx:self.current_idx + num_steps,0]
+                        x[i_total, :, :] = text[self.current_idx:self.current_idx + num_steps,1:]
                         temp_y = lbs[self.current_idx:self.current_idx + num_steps]
                     # convert all of temp_y into a one hot representation
                     y[i_total, :, :] = to_categorical(temp_y, num_classes=labelsize)
@@ -95,75 +98,50 @@ class KerasBatchGenerator(object):
                 self.idx = self.idx + 1
                 if (self.idx >= len(self.data)):
                     self.idx = 0
-            yield x, y
-        # all_size=len(self.data)
-        # x = np.zeros((all_size*one_batch_size, num_steps,feature_size))
-        # y = np.zeros((all_size*one_batch_size, num_steps, labelsize))
-        # while True:
-        #     # for idx in range(len(self.data)):
-        #     for idoc in range(all_size):
-        #         text=self.data[idoc]
-        #         lbs=self.label[idoc]
-        #         if (len(text) <= skip_step):
-        #             continue
-        #         self.current_idx=0
-        #         for i in range(one_batch_size):
-        #             head=0
-        #             i_total=i+idoc*one_batch_size
-        #             if (self.current_idx >= len(text)):
-        #                 head+=1
-        #                 self.current_idx = head
-        #             if self.current_idx + num_steps >= len(text):
-        #                 # reset the index back to the start of the data set
-        #                 rest_seat=num_steps-(len(text)-self.current_idx)
-        #                 x[i_total, :, :] = np.vstack((text[self.current_idx:], np.zeros((rest_seat,feature_size))))
-        #                 temp_y = np.hstack((lbs[self.current_idx:],np.zeros((rest_seat))))
-        #                 self.current_idx = 0
-        #             else:
-        #                 x[i_total, :, :] = text[self.current_idx:self.current_idx + num_steps]
-        #                 temp_y = lbs[self.current_idx:self.current_idx + num_steps]
-        #             # convert all of temp_y into a one hot representation
-        #             y[i_total, :, :] = to_categorical(temp_y, num_classes=labelsize)
-        #             self.current_idx += skip_step
-        #     yield x, y
+            yield [id,x], y
 
     def generate(self):
+        id = np.zeros((batch_size, num_steps))
         x = np.zeros((batch_size, num_steps,feature_size))
         y = np.zeros((batch_size, num_steps, labelsize))
         while True:
-            # for idx in range(len(self.data)):
             for idoc in range(docInbatch):
-                text=self.data[self.idx]
-                lbs=self.label[self.idx]
+                text = self.data[self.idx]
+                lbs = self.label[self.idx]
                 if (len(text) <= skip_step):
                     self.idx = self.idx + 1
                     if (self.idx >= len(self.data)):
                         self.idx = 0
                     continue
-                self.current_idx=0
+                self.current_idx = 0
                 for i in range(one_batch_size):
-                    head=0
-                    i_total=i+idoc*one_batch_size
+                    head = 0
+                    i_total = i + idoc * one_batch_size
                     if (self.current_idx >= len(text)):
-                        head+=1
+                        head += 1
                         self.current_idx = head
-                    if self.current_idx + num_steps >= len(text):
+                    if self.current_idx + num_steps > len(text):
                         # reset the index back to the start of the data set
-                        rest_seat=num_steps-(len(text)-self.current_idx)
-                        x[i_total, :, :] = np.vstack((text[self.current_idx:], np.zeros((rest_seat,feature_size))))
-                        temp_y = np.hstack((lbs[self.current_idx:],np.zeros((rest_seat))))
+                        rest_seat = num_steps - (len(text) - self.current_idx)
+                        # a = text[self.current_idx:, 0]
+                        # b = np.zeros((rest_seat))
+                        # c=np.hstack((text[self.current_idx:, 0], np.zeros((rest_seat))))
+                        id[i_total, :] = np.hstack((text[self.current_idx:, 0], np.zeros((rest_seat))))
+                        x[i_total, :, :] = np.vstack((text[self.current_idx:, 1:], np.zeros((rest_seat, feature_size))))
+                        temp_y = np.hstack((lbs[self.current_idx:], np.zeros((rest_seat))))
                         self.current_idx = 0
                     else:
-                        x[i_total, :, :] = text[self.current_idx:self.current_idx + num_steps]
+                        id[i_total, :] = text[self.current_idx:self.current_idx + num_steps, 0]
+                        x[i_total, :, :] = text[self.current_idx:self.current_idx + num_steps, 1:]
                         temp_y = lbs[self.current_idx:self.current_idx + num_steps]
                     # convert all of temp_y into a one hot representation
                     y[i_total, :, :] = to_categorical(temp_y, num_classes=labelsize)
                     self.current_idx += skip_step
 
-                self.idx=self.idx+1
-                if(self.idx>=len(self.data)):
-                    self.idx=0
-            yield x, y
+                self.idx = self.idx + 1
+                if (self.idx >= len(self.data)):
+                    self.idx = 0
+            yield [id, x], y
 
 def load_data():
     # get the data paths
@@ -267,11 +245,15 @@ class LossHistory(keras.callbacks.Callback):
         iters = range(len(self.losses))
         plt.figure()
         # acc
-        # plt.plot(iters, self.accuracy, 'r', label='train acc')
+        plt.plot(iters, self.accuracy, 'r', label='train acc')
         # loss
         plt.plot(iters, self.losses, 'g', label='train loss')
 
-        # plt.plot(iters, self.val_acc, 'b', label='val acc')
+        avgacc = self.val_acc
+        for i in range(2, len(avgacc) - 3):
+            avgacc[i] = np.mean(self.val_acc[i - 2:i + 2])
+
+        plt.plot(iters, avgacc, 'b', label='val acc')
         # val_loss
         avgloss=self.val_loss
         for i in range(2,len(avgloss)-3):
@@ -288,20 +270,42 @@ class LossHistory(keras.callbacks.Callback):
         plt.savefig(filename)
         print('best model is',self.best)
         print ('val-acc is',self.val_acc[self.best])
+        plt.close()
 
 
 
 def defLSTM():
-    model = Sequential()
-    # model.add(Embedding(vocab+1, hidden_size, input_length=num_steps, mask_zero=True,dropout=0.5))
-    model.add(BatchNormalization(axis=2,input_shape=(num_steps,feature_size)))
-    # model.add(Embedding(vocabulary, hidden_size, input_length=num_steps))
-    model.add(Bidirectional(LSTM(hidden_size, return_sequences=True,dropout=0.5, activity_regularizer = regularizers.l2(0.001)),merge_mode='concat'))
-    # , activity_regularizer = regularizers.l2(0.001)
-    # model.add(LSTM(hidden_size, return_sequences=True))
-    model.add(Dropout(0.5))
-    model.add(TimeDistributed(Dense(labelsize)))
-    model.add(Activation('softmax'))
+
+    # id_in=Input(shape=(num_steps,),name='id_in')
+    # ft_in=Input(shape=(num_steps,feature_size),name='ft_in')
+    # x=Embedding(vocab+1, hidden_size, input_length=num_steps, mask_zero=True)(id_in)
+    # y=BatchNormalization(axis=2,input_shape=(num_steps,feature_size))(ft_in)
+    # x=Bidirectional(LSTM(hidden_size, return_sequences=True,dropout=0.5, activity_regularizer = regularizers.l2(0.001)),merge_mode='concat')(x)
+    # x=Dense(8,activation='relu')(x)
+    # z=keras.layers.concatenate([x, y])
+    # z=Dense(64, activation='relu',activity_regularizer = regularizers.l2(0.001))(z)
+    # z = Dense(64, activation='relu')(z)
+    # z=Dropout(0.5)(z)
+    # z=TimeDistributed(Dense(labelsize))(z)
+    # z=Activation('softmax',name='z')(z)
+    #
+    # model=Model(inputs=[id_in,ft_in],outputs=[z])
+
+    id_in = Input(shape=(num_steps,), name='id_in')
+    ft_in = Input(shape=(num_steps, feature_size), name='ft_in')
+    x = Embedding(vocab + 1, 8, input_length=num_steps, mask_zero=True)(id_in)
+    y = BatchNormalization(axis=2, input_shape=(num_steps, feature_size))(ft_in)
+    z = keras.layers.concatenate([x, y])
+    # z = Dense(hidden_size, activation='relu')(z)
+    z = Bidirectional(
+        LSTM(hidden_size, return_sequences=True, dropout=0.5, activity_regularizer=regularizers.l2(0.001)),
+        merge_mode='concat')(z)
+    z = Dense(64, activation='relu', activity_regularizer=regularizers.l2(0.001))(z)
+    z = Dropout(0.5)(z)
+    z = TimeDistributed(Dense(labelsize))(z)
+    z = Activation('softmax', name='z')(z)
+
+    model = Model(inputs=[id_in, ft_in], outputs=[z])
 
 
 
@@ -338,7 +342,8 @@ if __name__ == "__main__":
     model=defLSTM()
     # trainLSTM(model,train_data_generator,valid_data_generator)
 
-    opt = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=None, decay=1e-5, amsgrad=False)
+    # opt = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=None, decay=1e-5, amsgrad=False)
+    opt=keras.optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=None, decay=1e-5)
 
     model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['categorical_accuracy'])
 

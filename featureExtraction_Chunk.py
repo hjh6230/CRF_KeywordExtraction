@@ -143,7 +143,7 @@ class featureExtraction:
 
 
         word = sent[i]
-        postag=posList[i][1]
+        # postag=posList[i][1]
         chunktag=chunkList[i][1]
         freq_title = self.token_title_l.count(word.lower())/len(self.token_title_l)
         if(len(self.token_text_l)==0):
@@ -162,39 +162,39 @@ class featureExtraction:
             'word.isdigit()': word.isdigit(),
             'freq_title': freq_title,
             'freq_text': freq_text,
-            'postag': postag,
-            'postag[:2]': postag[:2],
+            # 'postag': postag,
+            # 'postag[:2]': postag[:2],
             'chunktag': chunktag,
         }
-        if i > 0:
-            word1 = sent[i - 1]
-            postag1 = posList[i-1][1]
-            chunktag1 = chunkList[i-1][1]
-            features.update({
-                '-1:word.lower()': word1.lower(),
-                '-1:word.istitle()': word1.istitle(),
-                '-1:word.isupper()': word1.isupper(),
-                '-1:postag': postag1,
-                '-1:postag[:2]': postag1[:2],
-                '-1:chunktag': chunktag1,
-            })
-        else:
-            features['BOS'] = True
-
-        if i < len(sent) - 1:
-            word1 = sent[i + 1]
-            postag1 = posList[i+1][1]
-            chunktag1 = chunkList[i + 1][1]
-            features.update({
-                '+1:word.lower()': word1.lower(),
-                '+1:word.istitle()': word1.istitle(),
-                '+1:word.isupper()': word1.isupper(),
-                '+1:postag': postag1,
-                '+1:postag[:2]': postag1[:2],
-                '+1:chunktag': chunktag1,
-            })
-        else:
-            features['EOS'] = True
+        # if i > 0:
+        #     word1 = sent[i - 1]
+        #     postag1 = posList[i-1][1]
+        #     chunktag1 = chunkList[i-1][1]
+        #     features.update({
+        #         '-1:word.lower()': word1.lower(),
+        #         '-1:word.istitle()': word1.istitle(),
+        #         '-1:word.isupper()': word1.isupper(),
+        #         '-1:postag': postag1,
+        #         '-1:postag[:2]': postag1[:2],
+        #         '-1:chunktag': chunktag1,
+        #     })
+        # else:
+        #     features['BOS'] = True
+        #
+        # if i < len(sent) - 1:
+        #     word1 = sent[i + 1]
+        #     postag1 = posList[i+1][1]
+        #     chunktag1 = chunkList[i + 1][1]
+        #     features.update({
+        #         '+1:word.lower()': word1.lower(),
+        #         '+1:word.istitle()': word1.istitle(),
+        #         '+1:word.isupper()': word1.isupper(),
+        #         '+1:postag': postag1,
+        #         '+1:postag[:2]': postag1[:2],
+        #         '+1:chunktag': chunktag1,
+        #     })
+        # else:
+        #     features['EOS'] = True
 
         return features
 

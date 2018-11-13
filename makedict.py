@@ -30,7 +30,17 @@ def readdict():
     with open('obj/' + name + '.pkl', 'rb') as f:
         return pickle.load(f)
 
+
+def makerand():
+    randorder = [i for i in range(1, 1880)]
+    np.random.shuffle(randorder)
+    name='randlist2'
+    with open('obj/' + name + '.pkl', 'wb') as f:
+        pickle.dump(randorder, f, pickle.HIGHEST_PROTOCOL)
+
+
 if __name__ == "__main__":
-    makefull()
+    #makefull()
     # vocab=readdict()
     # print('a')
+    makerand()

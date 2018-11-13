@@ -39,10 +39,6 @@ data = SR("Scopes.xlsx", True)
 datasize=data.getsize()
 
 
-randorder = [i for i in range(1, datasize + 1)]
-random.shuffle(randorder)
-randorder = randorder[:num_doc]
-
 class KerasBatchGenerator(object):
 
     def __init__(self, data ,label):

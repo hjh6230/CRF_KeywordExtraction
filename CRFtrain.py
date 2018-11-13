@@ -1,6 +1,5 @@
 from itertools import chain
 
-
 import scipy.stats
 from sklearn.metrics import make_scorer
 from sklearn.externals import joblib
@@ -13,8 +12,10 @@ from sklearn_crfsuite import scorers
 from sklearn_crfsuite import metrics
 import random
 
-from featureExtraction import featureExtraction as FeatureExyract
+from featureExtraction_empty import featureExtraction as FeatureExyract
 from ProcessBar import progressbar
+import pickle
+
 
 def CRFvalidation( X_test, y_test,crf):
     # print("extract data")
@@ -26,8 +27,8 @@ def CRFvalidation( X_test, y_test,crf):
     y_pred = crf.predict(X_test)
 
     labels = list(crf.classes_)
-    labels.remove('None')
-    labels.remove('STOP')
+    # labels.remove('None')
+    # labels.remove('STOP')
 
     sorted_labels = sorted(
         labels,
@@ -39,14 +40,17 @@ def CRFvalidation( X_test, y_test,crf):
     ))
 
 
+
+
     return 0
 
 def extractdata(selectSize):
     data = FeatureExyract(True)
     datasize = data.getsize()
 
-    randorder = [i for i in range(1,datasize+1)]
-    random.shuffle(randorder)
+    name = 'randlist'
+    with open('obj/' + name + '.pkl', 'rb') as f:
+        randorder = pickle.load(f)
     randorder=randorder[:selectSize]
 
     X_all=[]
@@ -106,10 +110,11 @@ def Cv3(X_train, y_train):
     return rs.best_estimator_
 
 if __name__ == "__main__":
-    No=0
-    datasize=500
-    X_train, y_train, X_test, y_test=extractdata(datasize)
-    crf = Cv3(X_train,y_train)
-    CRFvalidation(X_test, y_test,crf)
-    filename = "CRFmodel_" +str(datasize)+"data_"+ str(No) + ".sav"
-    joblib.dump(crf, filename)
+    for i in range(1):
+        datasize=1880
+        X_train, y_train, X_test, y_test=extractdata(datasize)
+        crf = Cv3(X_train,y_train)
+        CRFvalidation(X_train, y_train, crf)
+        CRFvalidation(X_test, y_test,crf)
+        filename = "models\CRFmodel_empty_"+str(datasize)+"data_"+ str(i) + ".sav"
+        joblib.dump(crf, filename)
